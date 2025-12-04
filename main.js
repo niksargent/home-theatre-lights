@@ -184,7 +184,10 @@ const FlashController = {
       _mockLights: {
         "1": { name: "Mock Front Left", state: { on: true, bri: 200, hue: 10000, sat: 200, ct: 300 } },
         "2": { name: "Mock Front Right", state: { on: true, bri: 180, hue: 50000, sat: 180, ct: 250 } },
-        "3": { name: "Mock Back Wash", state: { on: false, bri: 254, hue: 30000, sat: 254, ct: 200 } }
+        "3": { name: "Mock Back Wash", state: { on: false, bri: 254, hue: 30000, sat: 254, ct: 200 } },
+        "4": { name: "Mock Center Spot", state: { on: true, bri: 220, hue: 45000, sat: 210, ct: 180 } },
+        "5": { name: "Mock Side Fill L", state: { on: true, bri: 160, hue: 15000, sat: 150, ct: 260 } },
+        "6": { name: "Mock Side Fill R", state: { on: true, bri: 160, hue: 55000, sat: 150, ct: 260 } }
       },
       authenticate: async function() {
         AppState.username = "mock-user";
