@@ -1,0 +1,212 @@
+/* --------------------------------------------------
+   Hue Control Prototype v5.0
+   - Modularized flash cancellation by introducing FlashController:
+       • Added cancelPendingFlash(group) to clear any pending flash+transition timers.
+       • Realtime control functions now call FlashController.cancelPendingFlash(group)
+         before sending updates to ensure that any flash scene in progress is aborted.
+   - This change prevents pending flash transitions from overriding realtime updates.
+   -------------------------------------------------- */
+
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      transition: background-color 0.3s;
+    }
+    /* Dark Mode Theme Classes */
+    .theme-normal { background-color: #ffffff; }
+    .theme-dim { background-color: #bbbbbb; }
+    .theme-dark { background-color: #888888; }
+    .theme-very-dark { background-color: #555555; }
+    
+    input[type="range"] {
+      touch-action: none;
+      -ms-touch-action: none;
+      -webkit-user-drag: none;
+    }
+    .toggle-panel-btn {
+      position: fixed;
+      top: 10px;
+      left: 10px;
+      background: #555;
+      color: #fff;
+      border: none;
+      padding: 5px 10px;
+      cursor: pointer;
+      z-index: 1100;
+    }
+    .flyout-panel {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 300px;
+      height: 100%;
+      background: #f4f4f4;
+      box-shadow: 2px 0 5px rgba(0,0,0,0.3);
+      overflow-y: auto;
+      padding: 20px;
+      z-index: 1000;
+      transform: translateX(-100%);
+      transition: transform 0.3s ease;
+    }
+    .flyout-panel.open {
+      transform: translateX(0);
+    }
+    .flyout-panel h2 { margin-top: 0; }
+    .main-content {
+      padding: 20px;
+      margin-top: 50px;
+    }
+    .section { margin-bottom: 30px; }
+    .section h2 { margin-bottom: 10px; }
+    .filter-group {
+      margin-bottom: 10px;
+    }
+    .filter-group input[type="text"] {
+      width: 300px;
+      padding: 5px;
+      font-size: 1em;
+    }
+    /* Global BPM control styling */
+    .global-bpm {
+      margin-left: 20px;
+    }
+    #groups-container.horizontal {
+      display: flex;
+      flex-direction: row;
+      gap: 10px;
+      flex-wrap: nowrap;
+      overflow-x: auto;
+    }
+    #groups-container.vertical {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .group {
+      border: 2px solid #888;
+      padding: 10px;
+      border-radius: 5px;
+      min-width: 200px;
+      background: #eee;
+      margin-bottom: 10px;
+    }
+    .group.unassigned {
+      border-color: #444;
+      background: #f0f0f0;
+    }
+    .group-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+      cursor: move;
+    }
+    .group-header h3 { margin: 0; font-size: 1.1em; }
+    .collapse-toggle {
+      margin-left: 5px;
+      font-weight: bold;
+      cursor: pointer;
+      background: transparent;
+      border: none;
+      font-size: 1em;
+    }
+    .group-header button.delete-group {
+      background: #c00;
+      border: none;
+      color: #fff;
+      padding: 2px 5px;
+      cursor: pointer;
+      font-size: 0.8em;
+    }
+    .group.unassigned .delete-group { display: none; }
+    .group-dropzone {
+      min-height: 50px;
+      padding: 5px;
+      border: 1px dashed #aaa;
+      border-radius: 3px;
+      background: #f9f9f9;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+    .light-control {
+      border: 1px solid #ccc;
+      padding: 10px;
+      border-radius: 5px;
+      background: #ddd;
+      cursor: move;
+      width: 200px;
+      box-sizing: border-box;
+    }
+    .light-control h4 { margin: 0 0 5px; font-size: 1em; }
+    .light-controls {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+    button { padding: 8px 12px; margin-bottom: 10px; }
+    input[type="text"],
+    input[type="number"] {
+      width: 100%;
+      padding: 5px;
+      margin-bottom: 10px;
+    }
+    .realtime-controls {
+      border-top: 1px solid #aaa;
+      padding: 5px 0;
+    }
+    .realtime-controls > div {
+      margin-bottom: 5px;
+    }
+    .realtime-controls label {
+      font-size: 0.9em;
+      margin-right: 5px;
+    }
+    .preset-buttons button {
+      margin-right: 3px;
+      margin-bottom: 3px;
+      font-size: 0.8em;
+      padding: 3px 6px;
+    }
+    .speed-control {
+      margin-top: 5px;
+    }
+    .bpm-display {
+      font-size: 0.9em;
+      margin-left: 5px;
+    }
+    .effects-panel {
+      border: 1px solid #ccc;
+      padding: 5px;
+      margin-top: 5px;
+      background: #fdfdfd;
+    }
+    #scene-management {
+      border-top: 2px solid #888;
+      padding-top: 10px;
+      margin-top: 10px;
+    }
+    #scene-management h3 {
+      margin: 0 0 5px;
+      font-size: 1em;
+    }
+    #scenes-container > div {
+      display: flex;
+      align-items: center;
+      border: 1px solid #666;
+      padding: 3px;
+      margin: 3px 0;
+      font-size: 0.9em;
+    }
+    #scenes-container > div button {
+      margin-right: 5px;
+    }
+    .scene-settings {
+      margin-right: 10px;
+    }
+    .scene-name {
+      font-weight: bold;
+    }
+    .control-group { margin-bottom: 15px; }
+    .control-group label { font-weight: bold; display: block; margin-bottom: 3px; }
